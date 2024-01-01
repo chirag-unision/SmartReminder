@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
@@ -19,41 +19,17 @@ import {
 
 import {
   Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
+  Header
 } from 'react-native/Libraries/NewAppScreen';
+
+import MapView, {PROVIDER_GOOGLE, Marker, Circle} from 'react-native-maps';
+import {enableLatestRenderer} from 'react-native-maps';
+
+enableLatestRenderer();
 
 type SectionProps = PropsWithChildren<{
   title: string;
 }>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -62,57 +38,59 @@ function App(): React.JSX.Element {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const [region, setRegion]= useState({
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.015,
+    longitudeDelta: 0.0121,
+  });
+
+  const [mark, setMark]= useState({latitude: 37.78893, longitude: -122.430});
+
+  function onRegionChange(region:any) {
+    setRegion(region);
+  }
+
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
+    // <SafeAreaView style={backgroundStyle}>
         <View
-          style={{
+          style={[{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+          }, styles2.container]}>
+          <MapView
+            provider={PROVIDER_GOOGLE} // remove if not using Google Maps
+            style={styles2.map}
+            region={region}
+            // onRegionChange={onRegionChange}
+          >
+                {/* <Marker
+                  key={1}
+                  coordinate={{latitude: 37.78813, longitude: -122.430}}
+                  title={"marker.title"}
+                  description={"marker.description"}
+                /> */}
+                  <Marker draggable
+                    coordinate={mark}
+                    onDragEnd={(e) => setMark(e.nativeEvent.coordinate)}
+                  />
+                  <Circle center={mark} radius={100} strokeColor='red' fillColor='rgba(12,12,12,0.1)' />
+          </MapView>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+    // </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+const styles2 = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+    height: '90%',
+    width: '100%',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+ });
 
 export default App;
