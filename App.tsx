@@ -5,7 +5,7 @@
  * @format
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   SafeAreaView,
@@ -24,6 +24,7 @@ import {
 
 import MapView, {PROVIDER_GOOGLE, Marker, Circle} from 'react-native-maps';
 import {enableLatestRenderer} from 'react-native-maps';
+import Geolocation from '@react-native-community/geolocation';
 
 enableLatestRenderer();
 
@@ -51,6 +52,23 @@ function App(): React.JSX.Element {
     setRegion(region);
   }
 
+  useEffect(()=> {
+    getLocation();
+  }, []);
+
+  const getLocation= ()=>{
+    Geolocation.getCurrentPosition((data)=>{
+        console.log(data.coords);
+        setMark({latitude: data.coords.latitude, longitude: data.coords.longitude});
+        setRegion({
+          latitude: data.coords.latitude,
+          longitude: data.coords.longitude,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.0121,
+        });
+    })
+  }
+
   return (
     // <SafeAreaView style={backgroundStyle}>
         <View
@@ -61,6 +79,7 @@ function App(): React.JSX.Element {
             provider={PROVIDER_GOOGLE} // remove if not using Google Maps
             style={styles2.map}
             region={region}
+            // showsUserLocation={true}
             // onRegionChange={onRegionChange}
           >
                 {/* <Marker
@@ -73,7 +92,7 @@ function App(): React.JSX.Element {
                     coordinate={mark}
                     onDragEnd={(e) => setMark(e.nativeEvent.coordinate)}
                   />
-                  <Circle center={mark} radius={100} strokeColor='red' fillColor='rgba(12,12,12,0.1)' />
+                  <Circle center={mark} radius={500} strokeColor='red' fillColor='rgba(12,12,12,0.1)' />
           </MapView>
         </View>
     // </SafeAreaView>
