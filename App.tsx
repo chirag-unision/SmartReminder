@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
+  AppRegistry,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -27,6 +28,7 @@ import MapView, {PROVIDER_GOOGLE, Marker, Circle} from 'react-native-maps';
 import {enableLatestRenderer} from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import BackgroundService from 'react-native-background-actions';
+import notifee from '@notifee/react-native';
 
 enableLatestRenderer();
 
@@ -79,6 +81,9 @@ function App(): React.JSX.Element {
     await new Promise( async (resolve) => {
         for (let i = 0; BackgroundService.isRunning(); i++) {
             console.log(i);
+            if(i==10) {
+              pushNotice();
+            }
             await sleep(delay);
         }
     });
@@ -103,6 +108,31 @@ function App(): React.JSX.Element {
   const startService= async ()=> {
     await BackgroundService.start(veryIntensiveTask, options);
     await BackgroundService.updateNotification({taskDesc: 'New ExampleTask description'}); // Only Android, iOS will ignore this call
+  }
+
+  const pushNotice= async ()=> {
+      // Request permissions (required for iOS)
+      await notifee.requestPermission()
+  
+      // Create a channel (required for Android)
+      const channelId = await notifee.createChannel({
+        id: 'default',
+        name: 'Default Channel',
+      });
+  
+      // Display a notification
+      notifee.displayNotification({
+        body: 'Full-screen notification',
+        android: {
+          channelId,
+          pressAction: {
+            // For custom component:
+            id: 'default',
+            mainComponent: 'custom-component',
+      
+          },
+        },
+      })
   }
 
   const stopService= async ()=> {
@@ -139,6 +169,23 @@ function App(): React.JSX.Element {
           </Pressable>
           <Pressable onPress={stopService} style={[{"backgroundColor":"red"} ]} >
             <Text>Click here to Stop</Text>
+          </Pressable>
+          <Pressable onPress={pushNotice} style={[{"backgroundColor":"red", "margin": 20} ]} >
+            <Text>Click here to Notify</Text>
+          </Pressable>
+        </View>
+    // </SafeAreaView>
+  );
+}
+
+export function CustomComponent(): React.JSX.Element {
+
+  return (
+    // <SafeAreaView style={backgroundStyle}>
+        <View
+          style={[styles2.container]}>
+          <Pressable onPress={()=>{}} style={[{"backgroundColor":"red", "margin": 20} ]} >
+            <Text>Click here to Notify</Text>
           </Pressable>
         </View>
     // </SafeAreaView>
