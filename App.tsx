@@ -1,20 +1,11 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React, { useEffect, useState } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
-  AppRegistry,
   Pressable,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native';
@@ -28,7 +19,8 @@ import MapView, {PROVIDER_GOOGLE, Marker, Circle} from 'react-native-maps';
 import {enableLatestRenderer} from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import BackgroundService from 'react-native-background-actions';
-import notifee from '@notifee/react-native';
+import notifee, {AndroidCategory, AndroidImportance} from '@notifee/react-native';
+import {AsyncStorage} from 'react-native';
 
 enableLatestRenderer();
 
@@ -89,6 +81,17 @@ function App(): React.JSX.Element {
     });
   };
 
+  const storeData = async () => {
+    try {
+      await AsyncStorage.setItem(
+        'reminders',
+        '[]',
+      );
+    } catch (error) {
+      // Error saving data
+    }
+  };
+
   const options = {
       taskName: 'Example',
       taskTitle: 'ExampleTask title',
@@ -124,11 +127,16 @@ function App(): React.JSX.Element {
       notifee.displayNotification({
         body: 'Full-screen notification',
         android: {
+          category: AndroidCategory.ALARM,
+          importance: AndroidImportance.HIGH,
           channelId,
-          pressAction: {
+          fullScreenAction: {
             // For custom component:
             id: 'default',
             mainComponent: 'custom-component',
+
+            // id: 'default',
+            // launchActivity: 'com.smartreminder.CustActivity',
       
           },
         },
@@ -145,6 +153,7 @@ function App(): React.JSX.Element {
           style={[{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }, styles2.container]}>
+          <View style={styles2.subContainer}>
           <MapView
             provider={PROVIDER_GOOGLE} // remove if not using Google Maps
             style={styles2.map}
@@ -164,15 +173,23 @@ function App(): React.JSX.Element {
                   />
                   <Circle center={mark} radius={500} strokeColor='red' fillColor='rgba(12,12,12,0.1)' />
           </MapView>
-          <Pressable onPress={startService} style={[{"backgroundColor":"green"} ]} >
-            <Text>Click here to Start</Text>
-          </Pressable>
-          <Pressable onPress={stopService} style={[{"backgroundColor":"red"} ]} >
-            <Text>Click here to Stop</Text>
-          </Pressable>
-          <Pressable onPress={pushNotice} style={[{"backgroundColor":"red", "margin": 20} ]} >
-            <Text>Click here to Notify</Text>
-          </Pressable>
+          </View>
+          <View style={styles2.control}>
+            {/* <Pressable onPress={startService} style={[{"backgroundColor":"green"} ]} >
+              <Text>Click here to Start</Text>
+            </Pressable>
+            <Pressable onPress={stopService} style={[{"backgroundColor":"red"} ]} >
+              <Text>Click here to Stop</Text>
+            </Pressable>
+            <Pressable onPress={pushNotice} style={[{"backgroundColor":"red", "margin": 20} ]} >
+              <Text>Click here to Notify</Text>
+            </Pressable> */}
+            <View style={styles2.inputContainer}>
+              <TextInput style={styles2.input} placeholder='Enter title here'></TextInput>
+              <TouchableOpacity style={styles2.saveBtn}><Text>Button</Text></TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles2.button}><Text style={{"textAlign": "center"}}>My Reminders</Text></TouchableOpacity>
+          </View>
         </View>
     // </SafeAreaView>
   );
@@ -194,8 +211,14 @@ export function CustomComponent(): React.JSX.Element {
 
 const styles2 = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
-    height: '90%',
+    // ...StyleSheet.absoluteFillObject,
+    height: '100%',
+    width: '100%',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  subContainer: {
+    height: '100%',
     width: '100%',
     justifyContent: 'flex-end',
     alignItems: 'center',
@@ -203,6 +226,35 @@ const styles2 = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
+  control: {
+    backgroundColor: '#17202A',
+    width: '100%'
+  },
+  input: {
+    backgroundColor: '#2C3E50',
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    color: '#fff',
+    width: '80%',
+    height: 50,
+    padding: 10,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 20,
+  },
+  button: {
+    padding: 20,
+    backgroundColor: '#2C3E50'
+  },
+  saveBtn: {
+    padding: 15,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+    backgroundColor: '#2C3E50'
+  }
  });
 
 export default App;
