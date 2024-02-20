@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 enableLatestRenderer();
 
-export default function Home({navigation}) {
+export default function Home({ navigation }:any) {
     const [region, setRegion] = useState({
         latitude: 37.78825,
         longitude: -122.4324,
@@ -26,14 +26,11 @@ export default function Home({navigation}) {
     });
 
     const [mark, setMark] = useState({ latitude: 37.78893, longitude: -122.430 });
+    const [title, setTitle] = useState('');
 
     function onRegionChange(region: any) {
         setRegion(region);
     }
-
-    useEffect(() => {
-        getLocation();
-    }, []);
 
     const getLocation = () => {
         Geolocation.getCurrentPosition((data) => {
@@ -50,24 +47,36 @@ export default function Home({navigation}) {
 
     const storeData = async (value: string) => {
       try {
-        await AsyncStorage.setItem('key', value);
+        let value= await AsyncStorage.getItem('data');
+        if(value==null || value=="") {
+            value= "[]";
+        }
+        let data= JSON.parse(value);
+        let obj= {
+            title: title,
+            lat: mark.latitude,
+            long: mark.longitude
+        };
+        data.push(obj);
+        await AsyncStorage.setItem('data', JSON.stringify(data));
+        console.log('Saved!');
       } catch (e) {
         // saving error
       }
     };
   
-    const getData = async () => {
-      try {
-        const value = await AsyncStorage.getItem('key');
-        if (value !== null) {
-          console.log(value)
-          navigation.replace('Main')
+    // const getData = async () => {
+    //   try {
+    //     const value = await AsyncStorage.getItem('key');
+    //     if (value !== null) {
+    //       console.log(value)
+    //       navigation.replace('Main')
   
-        }
-      } catch (e) {
-        // error reading value
-      }
-    };
+    //     }
+    //   } catch (e) {
+    //     // error reading value
+    //   }
+    // };
 
     const sleep = (time:any) => new Promise((resolve) => setTimeout(() => resolve(), time));
 
@@ -75,15 +84,34 @@ export default function Home({navigation}) {
         // Example of an infinite loop task
         const { delay } = taskDataArguments;
         await new Promise(async (resolve) => {
-            for (let i = 0; BackgroundService.isRunning(); i++) {
-                console.log(i);
-                if (i == 10) {
-                    pushNotice();
+            while(BackgroundService.isRunning()) {
+                let data= await AsyncStorage.getItem('data');
+                let obj= JSON.parse(data);
+                console.log('Data: '+data);
+                getLocation();
+                for(let i=0; i<obj?.length; i++) {
+                    let rad= measure(mark.latitude, mark.longitude, obj[i].lat, obj[i].long)
+                    if (rad <= 500) {
+                        // pushNotice();
+                        console.log(obj[i].title)
+                    }
                 }
                 await sleep(delay);
             }
         });
     };
+
+    function measure(lat1, lon1, lat2, lon2){  // generally used geo measurement function
+        var R = 6378.137; // Radius of earth in KM
+        var dLat = lat2 * Math.PI / 180 - lat1 * Math.PI / 180;
+        var dLon = lon2 * Math.PI / 180 - lon1 * Math.PI / 180;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        var d = R * c;
+        return d * 1000; // meters
+    }
 
     const options = {
         taskName: 'Example',
@@ -96,7 +124,7 @@ export default function Home({navigation}) {
         color: '#ff00ff',
         linkingURI: 'yourSchemeHere://chat/jane', // See Deep Linking for more info
         parameters: {
-            delay: 1000,
+            delay: 10000,
         },
     };
 
@@ -140,6 +168,8 @@ export default function Home({navigation}) {
         await BackgroundService.stop();
     }
 
+    useEffect(() => { getLocation() }, []);
+
     return (
         // <SafeAreaView style={backgroundStyle}>
         <View
@@ -166,7 +196,7 @@ export default function Home({navigation}) {
                 </MapView>
             </View>
             <View style={styles2.control}>
-                {/* <Pressable onPress={startService} style={[{"backgroundColor":"green"} ]} >
+                <Pressable onPress={startService} style={[{"backgroundColor":"green"} ]} >
                   <Text>Click here to Start</Text>
                 </Pressable>
                 <Pressable onPress={stopService} style={[{"backgroundColor":"red"} ]} >
@@ -174,10 +204,13 @@ export default function Home({navigation}) {
                 </Pressable>
                 <Pressable onPress={pushNotice} style={[{"backgroundColor":"red", "margin": 20} ]} >
                   <Text>Click here to Notify</Text>
-                </Pressable> */}
+                </Pressable>
+                <View>
+                    <Text>{`Lat: ${mark.latitude} Long: ${mark.longitude} Title: ${title}`}</Text>
+                </View>
                 <View style={styles2.inputContainer}>
-                    <TextInput style={styles2.input} placeholder='Enter title here'></TextInput>
-                    <TouchableOpacity style={styles2.saveBtn}><Text>Button</Text></TouchableOpacity>
+                    <TextInput style={styles2.input} placeholder='Enter title here' onChangeText={setTitle}></TextInput>
+                    <TouchableOpacity style={styles2.saveBtn} onPress={storeData}><Text>Button</Text></TouchableOpacity>
                 </View>
                 <TouchableOpacity 
                     style={styles2.button}
