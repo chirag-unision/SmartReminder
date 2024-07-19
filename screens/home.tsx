@@ -14,6 +14,8 @@ import Geolocation from '@react-native-community/geolocation';
 import BackgroundService from 'react-native-background-actions';
 import notifee, {AndroidCategory, AndroidImportance} from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Button } from '@react-native-material/core';
+import Sound from 'react-native-sound';
 
 enableLatestRenderer();
 
@@ -27,6 +29,22 @@ export default function Home({ navigation }:any) {
 
     const [mark, setMark] = useState({ latitude: 37.78893, longitude: -122.430 });
     const [title, setTitle] = useState('');
+
+    Sound.setCategory('Playback');
+
+    // Load the sound file 'whoosh.mp3' from the app bundle
+    // See notes below about preloading sounds within initialization code below.
+    var whoosh = new Sound('alarm.mp3', Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('failed to load the sound', error);
+        return;
+      }
+      // loaded successfully
+      console.log('duration in seconds: ' + whoosh.getDuration() + 'number of channels: ' + whoosh.getNumberOfChannels());
+    
+    });
+
+
 
     function onRegionChange(region: any) {
         setRegion(region);
@@ -86,13 +104,26 @@ export default function Home({ navigation }:any) {
         await new Promise(async (resolve) => {
             while(BackgroundService.isRunning()) {
                 let data= await AsyncStorage.getItem('data');
+                let i= 0;
                 let obj= JSON.parse(data);
                 console.log('Data: '+data);
                 getLocation();
                 for(let i=0; i<obj?.length; i++) {
                     let rad= measure(mark.latitude, mark.longitude, obj[i].lat, obj[i].long)
                     if (rad <= 500) {
-                        // pushNotice();
+                        // if(i < 1) {
+                            pushNotice();
+                            // i++;
+                        // }
+
+                        // Play the sound with an onEnd callback
+                        whoosh.play((success) => {
+                          if (success) {
+                            console.log('successfully finished playing');
+                          } else {
+                            console.log('playback failed due to audio decoding errors');
+                          }
+                        });
                         console.log(obj[i].title)
                     }
                 }
@@ -196,18 +227,33 @@ export default function Home({ navigation }:any) {
                 </MapView>
             </View>
             <View style={styles2.control}>
-                <Pressable onPress={startService} style={[{"backgroundColor":"green"} ]} >
-                  <Text>Click here to Start</Text>
-                </Pressable>
-                <Pressable onPress={stopService} style={[{"backgroundColor":"red"} ]} >
-                  <Text>Click here to Stop</Text>
-                </Pressable>
-                <Pressable onPress={pushNotice} style={[{"backgroundColor":"red", "margin": 20} ]} >
-                  <Text>Click here to Notify</Text>
-                </Pressable>
-                <View>
-                    <Text>{`Lat: ${mark.latitude} Long: ${mark.longitude} Title: ${title}`}</Text>
+                <View style={styles2.buttonBox}>
+                    <Button
+                        style={{width: '48%', margin: '1%'}}
+                        color='green'
+                        title="Start Service"
+                        // loading={loading}
+                        loadingIndicatorPosition="overlay"
+                        onPress={startService}
+                        // disabled={teamscore == '100' ? true : false}
+                    />
+                    <Button
+                        style={{width: '48%', margin: '1%'}}
+                        color='red'
+                        titleStyle={{color: 'white'}}
+                        title="Stop Service"
+                        // loading={loading}
+                        loadingIndicatorPosition="overlay"
+                        onPress={stopService}
+                        // disabled={teamscore == '100' ? true : false}
+                    />
                 </View>
+                {/* <Pressable onPress={pushNotice} style={[{"backgroundColor":"red", "margin": 20} ]} >
+                  <Text>Click here to Notify</Text>
+                </Pressable> */}
+                {/* <View>
+                    <Text>{`Lat: ${mark.latitude} Long: ${mark.longitude} Title: ${title}`}</Text>
+                </View> */}
                 <View style={styles2.inputContainer}>
                     <TextInput style={styles2.input} placeholder='Enter title here' onChangeText={setTitle}></TextInput>
                     <TouchableOpacity style={styles2.saveBtn} onPress={storeData}><Text>Button</Text></TouchableOpacity>
@@ -267,5 +313,8 @@ const styles2 = StyleSheet.create({
         borderTopRightRadius: 10,
         borderBottomRightRadius: 10,
         backgroundColor: '#2C3E50'
+      },
+      buttonBox: {
+        flexDirection: 'row'
       }
 })
